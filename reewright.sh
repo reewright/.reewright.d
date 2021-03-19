@@ -31,9 +31,9 @@ function gen_pipelines_yaml() {
         local team=$(echo "${pipe}" | cut -sd / -f 2)
         local name=$(echo "${pipe}" | cut -sd / -f 3)
         echo "
-      - set_pipeline: \"${name}\"
-        team: \"${team}\"
-        file: \".generated/${team}/${name}/pipeline.yaml\"
+        - set_pipeline: \"${name}\"
+          team: \"${team}\"
+          file: \".generated/${team}/${name}/pipeline.yaml\"
         "
     done
     popd >> /dev/null
@@ -64,11 +64,12 @@ jobs:
       - task: generate-yaml
         config:
           run:
-            path: repository/.reewright.d/reewright.sh
+            path: sh
+            args: [ "-ec", "apk add --no-cache bash && ./repository/.reewright.d/reewright.sh" ]
           platform: linux
           image_resource:
             type: registry-image
-            source: { repository: busybox }
+            source: { repository: alpine/git }
           inputs:
             - name: repository
           outputs:
@@ -77,12 +78,7 @@ jobs:
       - set_pipeline: self
         file: .generated/reewright.yaml
 
-  - name: set-other-pipelines
-    plan:
-    - get: repository
-      trigger: true
-      passed: [ "reewright-pipelines" ]
-    - in_parallel:
+      - in_parallel:
 
 $(gen_pipelines_yaml "${CUSTOM_CI_FOLDER}")
 EOF
